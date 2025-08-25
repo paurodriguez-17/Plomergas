@@ -5,12 +5,16 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Middlewares
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(express.static(path.join(__dirname, 'public')));
 
+// Archivos estáticos
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(express.static(path.join(__dirname, 'public'))); // Donde estará index.html
+
+// Rutas API
 const clientesRoutes = require('./routes/clientes');
 app.use('/api/clientes', clientesRoutes);
 const presupuestosRoutes = require('./routes/presupuestos');
@@ -22,21 +26,22 @@ app.use('/api/servicios', serviciosRoutes);
 const cuentasRoutes = require('./routes/cuentas');
 app.use('/api/cuentas', cuentasRoutes);
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views/index.html'));
+// 👉 Servir archivos HTML desde "views" si no lo hiciste ya
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Para views desde rutas raíz
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'views/index.html')));
+app.get('/clientes', (req, res) => res.sendFile(path.join(__dirname, 'views/clientes.html')));
+app.get('/empleados', (req, res) => res.sendFile(path.join(__dirname, 'views/empleados.html')));
+app.get('/servicios', (req, res) => res.sendFile(path.join(__dirname, 'views/servicios.html')));
+app.get('/facturacion', (req, res) => res.sendFile(path.join(__dirname, 'views/facturacion.html')));
+
+// ❗ Para soportar index.html al instalar PWA en Android o iOS:
+app.get('/index.html', (req, res) => {
+    res.redirect('/');
 });
-app.get('/clientes', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views/clientes.html'));
-});
-app.get('/empleados', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views/empleados.html'));
-});
-app.get('/servicios', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views/servicios.html'));
-});
-app.get('/facturacion', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views/facturacion.html'));
-});
+
+// Crear carpetas necesarias
 const carpetas = ['uploads/facturas', 'uploads/conformes'];
 carpetas.forEach(carpeta => {
     const fullPath = path.join(__dirname, carpeta);
@@ -46,6 +51,7 @@ carpetas.forEach(carpeta => {
     }
 });
 
+// Iniciar servidor
 app.listen(PORT, () => {
     console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
 });

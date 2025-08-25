@@ -1,0 +1,21 @@
+{
+  "name": "PlomerGas",
+  "short_name": "PlomerGas",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#e6f0fa",
+  "theme_color": "#0d47a1",
+  "description": "Sistema de gestión para PlomerGas: clientes, empleados, servicios y facturación.",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
