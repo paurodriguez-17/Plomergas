@@ -22,24 +22,33 @@
     </div>
     <form id="form-cuenta" class="card p-4 mb-5">
       <div class="row g-3 align-items-end">
-        <div class="col-md-6">
+        <div class="col-md-4">
           <label>Nombre de la cuenta</label>
           <input type="text" id="nombre_cuenta" class="form-control" required />
         </div>
-        <div class="col-md-4">
+        <div class="col-md-2">
           <label>Límite de facturación</label>
           <input type="number" id="limite" class="form-control" required />
         </div>
-        <div class="col-md-2 text-end">
-          <button type="submit" class="btn btn-success w-100">Agregar</button>
+        <div class="col-md-3">
+          <label>CUIT</label>
+          <input type="text" id="cuit" class="form-control" />
+        </div>
+        <div class="col-md-3">
+          <label>Clave fiscal</label>
+          <input type="text" id="clave_fiscal" class="form-control" />
         </div>
       </div>
-    </form>
+      <div class="col-md-2 text-end">
+        <button type="submit" class="btn btn-success w-100">Agregar</button>
+      </div>
+  </div>
+  </form>
 
-    <div class="card p-4">
-      <h3 class="mb-3">Cuentas registradas</h3>
-      <div id="lista-cuentas" class="table-responsive"></div>
-    </div>
+  <div class="card p-4">
+    <h3 class="mb-3">Cuentas registradas</h3>
+    <div id="lista-cuentas" class="table-responsive"></div>
+  </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

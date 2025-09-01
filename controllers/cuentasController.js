@@ -10,12 +10,12 @@ exports.listarCuentas = (req, res) => {
 
 // Crear nueva cuenta
 exports.crearCuenta = (req, res) => {
-  const { nombre, limite } = req.body;
-  if (!nombre || !limite) return res.status(400).json({ error: 'Faltan datos' });
+  const { nombre, limite, cuit, clave_fiscal } = req.body;
+  if (!nombre || !limite) return res.status(400).json({ error: 'Faltan datos obligatorios' });
 
   db.query(
-    'INSERT INTO cuentas (nombre, limite) VALUES (?, ?)',
-    [nombre, limite],
+    'INSERT INTO cuentas (nombre, limite, cuit, clave_fiscal) VALUES (?, ?, ?, ?)',
+    [nombre, limite, cuit?.trim() || null, clave_fiscal?.trim() || null],
     (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ message: 'Cuenta registrada', id: result.insertId });
@@ -26,12 +26,12 @@ exports.crearCuenta = (req, res) => {
 // Editar cuenta
 exports.editarCuenta = (req, res) => {
   const { id } = req.params;
-  const { nombre, limite } = req.body;
-  if (!nombre || !limite) return res.status(400).json({ error: 'Faltan datos' });
+  const { nombre, limite, cuit, clave_fiscal } = req.body;
+  if (!nombre || !limite) return res.status(400).json({ error: 'Faltan datos obligatorios' });
 
   db.query(
-    'UPDATE cuentas SET nombre = ?, limite = ? WHERE id = ?',
-    [nombre, limite, id],
+    'UPDATE cuentas SET nombre = ?, limite = ?, cuit = ?, clave_fiscal = ? WHERE id = ?',
+    [nombre, limite, cuit?.trim() || null, clave_fiscal?.trim() || null, id],
     (err) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ message: 'Cuenta actualizada' });
