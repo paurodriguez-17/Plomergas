@@ -7,5 +7,6 @@ router.get('/', serviciosController.listarServicios);
 router.delete('/:id', serviciosController.eliminarServicio);
 router.get('/:id', serviciosController.obtenerServicio);
 router.put('/:id', serviciosController.editarServicio);
+router.put('/:id/estado', serviciosController.actualizarEstadoPago);
 
 module.exports = router;

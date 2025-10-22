@@ -30,7 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
       metodo_pago: document.getElementById('metodo_pago').value,
       monto_facturado: parseFloat(document.getElementById('monto').value),
       gastos: parseFloat(document.getElementById('gastos').value) || 0,
-      gastos_detalle: document.getElementById('gastos_detalle').value || ''
+      gastos_detalle: document.getElementById('gastos_detalle').value || '',
+      estado_pago: document.getElementById('estado_pago').value
     };
 
     const editId = form.getAttribute('data-edit-id');
@@ -106,8 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
         cuentaEdit.appendChild(opt);
       });
     }
-
-    // Listeners de alerta
     cuentaSelect.addEventListener('change', e => verificarLimiteCuenta(e.target.value));
     if (cuentaEdit) {
       cuentaEdit.addEventListener('change', e => verificarLimiteCuenta(e.target.value, true));
@@ -164,6 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <th>Ingresos Brutos</th>
             <th>Gastos</th>
             <th>Total</th>
+            <th>Estado de Pago</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -196,6 +196,18 @@ document.addEventListener('DOMContentLoaded', () => {
               <td>$${parseFloat(s.ingresos_brutos).toFixed(2)}</td>
               <td>$${parseFloat(s.total_gastos).toFixed(2)}<br><small>${s.gastos_detalle || 'Sin detalles'}</small></td>
               <td><strong>$${parseFloat(s.total).toFixed(2)}</strong></td>
+            <td class="text-center">
+  ${s.estado_pago === 'Pagado'
+        ? '<span class="badge rounded-pill bg-success px-3 py-2">✅ Pagado</span>'
+        : `
+      <div class="d-flex flex-column align-items-center gap-1">
+        <span class="badge rounded-pill bg-danger px-3 py-2">Pendiente</span>
+        <button class="btn btn-sm btn-outline-success rounded-pill px-2 py-1" onclick="marcarComoPagado(${s.id})">
+          <i class="bi bi-check-circle"></i> Marcar
+        </button>
+      </div>
+    `}
+</td>
               <td>
                 <button class="btn btn-sm btn-warning me-1" onclick="editarServicio(${s.id})">Editar</button>
                 <button class="btn btn-sm btn-danger" onclick="eliminarServicio(${s.id})">Eliminar</button>
@@ -269,7 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('edit_nro_factura').value = s.nro_factura;
       document.getElementById('edit_cuenta').value = s.cuenta;
       document.getElementById('edit_metodo_pago').value = s.metodo_pago.charAt(0).toUpperCase() + s.metodo_pago.slice(1).toLowerCase();
-      document.getElementById('edit_monto').value = s.monto_facturado;
+      document.getElementById('edit_monto').value = s.monto_facturado,
+        document.getElementById('edit_estado_pago').value = s.estado_pago || 'Pendiente';
 
       // Empleados
       const selectEmpleados = document.getElementById('edit_empleados');
@@ -312,7 +325,8 @@ document.addEventListener('DOMContentLoaded', () => {
       metodo_pago: document.getElementById('edit_metodo_pago').value,
       monto_facturado: parseFloat(document.getElementById('edit_monto').value),
       gastos: parseFloat(document.getElementById('edit_gastos').value) || 0,
-      gastos_detalle: document.getElementById('edit_gastos_detalle').value || ''
+      gastos_detalle: document.getElementById('edit_gastos_detalle').value || '',
+      estado_pago: document.getElementById('edit_estado_pago').value
     };
 
 
@@ -346,5 +360,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const toastBootstrap = new bootstrap.Toast(toast);
     toastBootstrap.show();
   }
+  window.marcarComoPagado = async (id) => {
+    if (!confirm('¿Estás seguro de marcar este servicio como pagado?')) return;
+
+    const res = await fetch(`/api/servicios/${id}/estado`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ estado_pago: 'Pagado' })
+    });
+
+    if (res.ok) {
+      alert('Estado actualizado a "Pagado"');
+      cargarServicios();
+    } else {
+      const err = await res.json();
+      alert('Error al actualizar: ' + err.error);
+    }
+  };
 
 });

@@ -6,7 +6,9 @@ body {
   color: #0a192f;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   font-weight: 600;
   color: #1f4068;
 }
@@ -84,14 +86,18 @@ h1, h2, h3 {
   color: white;
 }
 
-input, textarea, select {
+input,
+textarea,
+select {
   border-radius: 10px !important;
   padding: 0.5rem 1rem;
   border: 1px solid #ced4da;
   transition: border 0.3s ease, box-shadow 0.3s ease;
 }
 
-input:focus, textarea:focus, select:focus {
+input:focus,
+textarea:focus,
+select:focus {
   border-color: #278ea5;
   box-shadow: 0 0 0 3px rgba(39, 142, 165, 0.25);
 }
@@ -186,4 +192,110 @@ label {
 .progress-bar {
   font-weight: bold;
   background: linear-gradient(to right, #21e6c1, #278ea5);
+}
+
+.btn-outline-success:hover {
+  background-color: #198754;
+  color: white !important;
+}
+
+.agenda-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.agenda-header h2 {
+  font-weight: 700;
+  color: #1f4068;
+}
+
+.agenda-header small {
+  display: block;
+  color: #6c757d;
+}
+
+.calendar-container {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  padding: 1.5rem;
+  transition: transform 0.2s ease;
+}
+
+.calendar-container:hover {
+  transform: translateY(-3px);
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+#calendarGrid {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.agenda-card {
+  background-color: #ffffff;
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  border: 1px solid #f1f1f1;
+}
+
+.agenda-card:hover {
+  box-shadow: 0 10px 24px rgba(39, 142, 165, 0.15);
+  transform: scale(1.02);
+  border-color: #278ea5;
+}
+
+.agenda-card small {
+  color: #6c757d;
+  display: block;
+}
+
+#proximos {
+  max-height: 350px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+#proximos::-webkit-scrollbar {
+  width: 6px;
+}
+
+#proximos::-webkit-scrollbar-thumb {
+  background-color: #278ea5;
+  border-radius: 8px;
+}
+
+.modal-header {
+  background: linear-gradient(135deg, #1f4068, #278ea5);
+  color: white;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+}
+
+.modal-title {
+  color: white !important;
+  font-weight: 600;
+}
+
+.btn-outline-primary {
+  border: 2px solid #278ea5;
+  color: #278ea5;
+  transition: 0.3s;
+}
+
+.btn-outline-primary:hover {
+  background: #278ea5;
+  color: #fff;
 }

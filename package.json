@@ -1,13 +1,13 @@
 {
   "name": "plomergas",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Sistema de gestión PlomerGas (clientes, presupuestos, agenda, facturación)",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "PlomerGas",
   "license": "ISC",
   "dependencies": {
     "cors": "^2.8.5",

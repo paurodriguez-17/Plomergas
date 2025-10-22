@@ -150,14 +150,21 @@ async function verPresupuestos(idCliente, nombre) {
     return;
   }
 
-  const lista = presupuestos.map(p => `
-    <li>
-      <strong>Fecha:</strong> ${new Date(p.fecha).toLocaleDateString()}<br>
-      <strong>Detalle:</strong> ${p.detalle}<br>
-      <strong>Precio:</strong> $${p.precio}
-    </li><hr>
-  `).join('');
+  const lista = presupuestos.map(p => {
+    const ruta = p.nombre_archivo
+      ? `/api/presupuestos/descargar/${p.nombre_archivo}`
+      : '#';
 
+    return `
+  <li>
+    <strong>N°:</strong> ${p.numero || '-'}<br>
+    <strong>Fecha:</strong> ${new Date(p.fecha).toLocaleDateString('es-AR')}<br>
+    <strong>Detalle:</strong> ${p.detalle}<br>
+    <strong>Monto total:</strong> $${p.precio}<br>
+    ${p.nombre_archivo ? `<a href="${ruta}" target="_blank">⬇️ Descargar PDF</a>` : '<em>PDF no disponible</em>'}
+  </li><hr>
+`;
+  }).join('');
   const ventana = window.open('', '_blank');
   ventana.document.write(`
     <html>
@@ -170,8 +177,7 @@ async function verPresupuestos(idCliente, nombre) {
   `);
   ventana.document.close();
 }
-
-// 🧾 Crear presupuesto + PDF
+// ✅ Mostrar confirmación visual al crear presupuesto
 async function onAddPresupuesto(e) {
   e.preventDefault();
 
@@ -179,12 +185,18 @@ async function onAddPresupuesto(e) {
   const detalle = document.getElementById('detalle').value;
   const duracion = document.getElementById('duracion').value;
   const nota = document.getElementById('nota').value;
-  const precio = document.getElementById('precio').value;
+  const precios = document.getElementById('precios').value;
+  const forma_pago = document.getElementById('forma_pago').value;
+  const firmantes = document.getElementById('firmantes').value;
+
+  if (!cliente_id || !detalle || !precios || !duracion) {
+    return alert('Completá todos los campos obligatorios.');
+  }
 
   const response = await fetch('/api/presupuestos', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ cliente_id, detalle, precio, duracion, nota })
+    body: JSON.stringify({ cliente_id, detalle, precios, duracion, nota, forma_pago, firmantes })
   });
 
   if (!response.ok) {
@@ -193,6 +205,7 @@ async function onAddPresupuesto(e) {
     return;
   }
 
+  // Descargar el PDF generado automáticamente
   const blob = await response.blob();
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -200,6 +213,8 @@ async function onAddPresupuesto(e) {
   a.download = `presupuesto_${cliente_id}.pdf`;
   a.click();
   formPresupuesto.reset();
+
+  alert('✅ Presupuesto generado correctamente.');
 }
 
 // ✏️ Abrir modal de edición

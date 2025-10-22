@@ -3,7 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
 // Middlewares
 app.use(cors());
@@ -14,7 +14,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, 'public'))); // Donde estará index.html
 
-// Rutas API
+const agendaRoutes = require('./routes/agenda');
+app.use('/api/agenda', agendaRoutes);
 const clientesRoutes = require('./routes/clientes');
 app.use('/api/clientes', clientesRoutes);
 const presupuestosRoutes = require('./routes/presupuestos');
@@ -35,12 +36,13 @@ app.get('/clientes', (req, res) => res.sendFile(path.join(__dirname, 'views/clie
 app.get('/empleados', (req, res) => res.sendFile(path.join(__dirname, 'views/empleados.html')));
 app.get('/servicios', (req, res) => res.sendFile(path.join(__dirname, 'views/servicios.html')));
 app.get('/facturacion', (req, res) => res.sendFile(path.join(__dirname, 'views/facturacion.html')));
+app.get('/agenda', (req, res) => res.sendFile(path.join(__dirname, 'views/agenda.html')));
 
 // ❗ Para soportar index.html al instalar PWA en Android o iOS:
 app.get('/index.html', (req, res) => {
     res.redirect('/');
 });
-
+app.use('/uploads/presupuestos', express.static(path.join(__dirname, 'uploads/presupuestos')));
 // Crear carpetas necesarias
 const carpetas = ['uploads/facturas', 'uploads/conformes'];
 carpetas.forEach(carpeta => {

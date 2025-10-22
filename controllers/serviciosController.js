@@ -11,7 +11,8 @@ exports.crearServicio = (req, res) => {
     cuenta,
     metodo_pago,
     monto_facturado,
-    gastos_detalle
+    gastos_detalle,
+    estado_pago
   } = req.body;
 
   if (
@@ -24,7 +25,7 @@ exports.crearServicio = (req, res) => {
   const ingresos_brutos = parseFloat(monto_facturado) * 0.03;
   const gastos_total = parseFloat(req.body.gastos) || 0;
   const gastosHistorial = [{
-    descripcion: req.body.gastos_detalle || '',
+    descripcion: gastos_detalle || '',
     monto: gastos_total
   }];
 
@@ -32,8 +33,8 @@ exports.crearServicio = (req, res) => {
 
   const sql = `
     INSERT INTO servicios 
-    (fecha, cliente_id, empleados, detalle, nro_factura, cuenta, metodo_pago, monto_facturado, ingresos_brutos, gastos, total)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (fecha, cliente_id, empleados, detalle, nro_factura, cuenta, metodo_pago, monto_facturado, ingresos_brutos, gastos, total, estado_pago)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   db.query(sql, [
@@ -47,17 +48,44 @@ exports.crearServicio = (req, res) => {
     monto_facturado,
     ingresos_brutos,
     JSON.stringify(gastosHistorial),
-    total
+    total,
+    estado_pago || 'Pendiente'
   ], (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
+
+    const servicio_id = result.insertId;
 
     // Actualizar total facturado en la cuenta
     cuentasController.incrementarFacturado(cuenta, monto_facturado);
 
-    res.json({ message: 'Servicio registrado correctamente', id: result.insertId });
+    // Buscar los empleados para saber quiénes cobran por porcentaje
+    db.query('SELECT id, trabaja_porcentaje FROM empleados WHERE id IN (?)', [empleados_ids], (errEmp, empleados) => {
+      if (errEmp) return console.error('Error consultando empleados:', errEmp.message);
+
+      const empleadosPorcentaje = empleados.filter(e => e.trabaja_porcentaje === 1);
+      const empleadosDia = empleados.filter(e => e.trabaja_porcentaje === 0);
+
+      // Calcular cuánto le corresponde a cada uno que trabaja por porcentaje
+      const totalDisponible = total * 0.5;
+      const montoPorEmpleado = empleadosPorcentaje.length > 0
+        ? totalDisponible / empleadosPorcentaje.length
+        : 0;
+
+      // Guardar en historial para los de porcentaje
+      empleadosPorcentaje.forEach(emp => {
+        const sqlHistorial = `
+          INSERT INTO historial_empleado (empleado_id, servicio_id, monto_porcentaje, fecha)
+          VALUES (?, ?, ?, ?)
+        `;
+        db.query(sqlHistorial, [emp.id, servicio_id, montoPorEmpleado, fecha], (err) => {
+          if (err) console.error('Error guardando historial:', err.message);
+        });
+      });
+
+      res.json({ message: 'Servicio registrado correctamente', id: servicio_id });
+    });
   });
 };
-
 exports.listarServicios = (req, res) => {
   const sql = `
     SELECT s.*, c.nombre AS cliente_nombre
@@ -149,7 +177,8 @@ exports.editarServicio = (req, res) => {
     metodo_pago,
     monto_facturado,
     gastos,
-    gastos_detalle
+    gastos_detalle,
+    estado_pago
   } = req.body;
   const { id } = req.params;
 
@@ -168,27 +197,50 @@ exports.editarServicio = (req, res) => {
 
     // Restar del total facturado anterior
     cuentasController.incrementarFacturado(servicioAnterior.cuenta, -servicioAnterior.monto_facturado);
-
-    // Actualizar servicio
     const sql = `
-      UPDATE servicios SET 
-        fecha = ?, cliente_id = ?, empleados = ?, detalle = ?, nro_factura = ?, 
-        cuenta = ?, metodo_pago = ?, monto_facturado = ?, ingresos_brutos = ?, 
-        gastos = ?, total = ?
-      WHERE id = ?
-    `;
+  UPDATE servicios SET 
+    fecha = ?, cliente_id = ?, empleados = ?, detalle = ?, nro_factura = ?, 
+    cuenta = ?, metodo_pago = ?, monto_facturado = ?, ingresos_brutos = ?, 
+    gastos = ?, total = ?, estado_pago = ?
+  WHERE id = ?
+`;
 
-    db.query(sql, [
-      fecha, cliente_id, JSON.stringify(empleados_ids), detalle, nro_factura,
-      cuenta, metodo_pago, monto_facturado, ingresos_brutos,
-      JSON.stringify(gastosHistorial), total, id
-    ], (err2) => {
-      if (err2) return res.status(500).json({ error: err2.message });
+    db.query(sql,
+      [
+        fecha,
+        cliente_id,
+        JSON.stringify(empleados_ids),
+        detalle,
+        nro_factura,
+        cuenta,
+        metodo_pago,
+        monto_facturado,
+        ingresos_brutos,
+        JSON.stringify(gastosHistorial),
+        total,
+        estado_pago,  // ← ¡Este es importante!
+        id
+      ]
+      , (err2) => {
+        if (err2) return res.status(500).json({ error: err2.message });
 
-      // Sumar al total facturado nuevo
-      cuentasController.incrementarFacturado(cuenta, monto_facturado);
+        // Sumar al total facturado nuevo
+        cuentasController.incrementarFacturado(cuenta, monto_facturado);
 
-      res.json({ message: 'Servicio actualizado correctamente' });
-    });
+        res.json({ message: 'Servicio actualizado correctamente' });
+      });
+  });
+};
+exports.actualizarEstadoPago = (req, res) => {
+  const { id } = req.params;
+  const { estado_pago } = req.body;
+
+  if (!['Pagado', 'Pendiente'].includes(estado_pago)) {
+    return res.status(400).json({ error: 'Estado de pago inválido' });
+  }
+
+  db.query('UPDATE servicios SET estado_pago = ? WHERE id = ?', [estado_pago, id], (err) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: 'Estado de pago actualizado' });
   });
 };

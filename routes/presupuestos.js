@@ -1,11 +1,16 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path'); // ✅ IMPORTANTE
 const presupuestosController = require('../controllers/presupuestosController');
 
-// Ruta para generar PDF
 router.post('/', presupuestosController.crearPresupuesto);
+router.get('/:idCliente', presupuestosController.listarPresupuestos);
 
-// Ruta para listar presupuestos de un cliente
-router.get('/:idCliente', presupuestosController.listarPresupuestos); // ← SIN PARÉNTESIS
+// ✅ Nueva ruta para descargar archivos
+router.get('/descargar/:archivo', (req, res) => {
+    const file = req.params.archivo;
+    const filePath = path.join(__dirname, '../uploads/presupuestos', file);
+    res.download(filePath);
+});
 
 module.exports = router;

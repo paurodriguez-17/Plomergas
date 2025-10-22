@@ -1,129 +1,199 @@
 const db = require('../db');
 const PDFDocument = require('pdfkit');
+const fs = require('fs');
+const path = require('path');
 
 exports.crearPresupuesto = (req, res) => {
-  const { cliente_id, detalle, precio, duracion, nota } = req.body;
+  const { cliente_id, detalle, precios, duracion, nota, forma_pago, firmantes } = req.body;
 
-  if (!cliente_id || !detalle || !precio || !duracion) {
+  if (!cliente_id || !detalle || !precios || !duracion) {
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
   }
 
-  // Guardar en DB
-  const sql = 'INSERT INTO presupuestos (cliente_id, detalle, precio) VALUES (?, ?, ?)';
-  db.query(sql, [cliente_id, detalle, precio], (err) => {
+  // 🧮 Parsear lista de precios
+  const listaPrecios = precios
+    .toString()
+    .split(/[\n,]/)
+    .map(p => parseFloat(p.trim()))
+    .filter(n => !isNaN(n));
+
+  const total = listaPrecios.reduce((acc, n) => acc + n, 0);
+
+  // Obtener número correlativo
+  db.query('SELECT MAX(id) AS ultimo FROM presupuestos', (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
 
-    // Obtener datos del cliente
-    db.query('SELECT * FROM clientes WHERE id = ?', [cliente_id], (err, results) => {
-      if (err || results.length === 0) return res.status(500).json({ error: 'Cliente no encontrado' });
+    const numeroPresupuesto = (result[0].ultimo || 0) + 1;
+    const numeroFormateado = numeroPresupuesto.toString().padStart(4, '0');
 
-      const cliente = results[0];
-      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    // Guardar en DB (precio → total calculado)
+    const sql = 'INSERT INTO presupuestos (cliente_id, detalle, precio, duracion, nota, numero) VALUES (?, ?, ?, ?, ?, ?)';
+    db.query(sql, [cliente_id, detalle, total, duracion, nota || '', numeroFormateado], (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      // Buscar cliente
+      db.query('SELECT * FROM clientes WHERE id = ?', [cliente_id], (err, results) => {
+        if (err || results.length === 0) return res.status(500).json({ error: 'Cliente no encontrado' });
+        const cliente = results[0];
 
-      const fecha = new Date().toLocaleDateString('es-AR');
-      const precioTexto = `${precio} pesos`;
+        const nombreArchivo = `presupuesto_${numeroFormateado}_${cliente.nombre.replace(/\s+/g, '_')}.pdf`;
+        const rutaArchivo = path.join(__dirname, '../uploads/presupuestos', nombreArchivo);
 
-      res.setHeader('Content-Disposition', `attachment; filename=presupuesto_${cliente.nombre}.pdf`);
-      res.setHeader('Content-Type', 'application/pdf');
+        const doc = new PDFDocument({ size: 'A4', margin: 50 });
+        const writeStream = fs.createWriteStream(rutaArchivo);
+        doc.pipe(writeStream);
 
-      // ========== ESTILO MEJORADO ==========
+        const azulMarino = '#0d47a1';
+        const fecha = new Date().toLocaleDateString('es-AR');
 
-      // Encabezado profesional
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(16)
-        .text('PLOMERGAS', { align: 'center' });
+        // ===== ENCABEZADO =====
+        doc
+          .font('Helvetica-Bold')
+          .fontSize(20)
+          .fillColor(azulMarino)
+          .text('PLOMERGAS', { align: 'center' });
+        doc
+          .font('Helvetica')
+          .fontSize(10)
+          .fillColor('black')
+          .text('CONSTITUCIÓN 1255 6º “B” · CAPITAL FEDERAL · CEL. 1137865335', { align: 'center' })
+          .text('www.plomergasargentina.com.ar', { align: 'center' })
+          .text('plomergas@hotmail.com', { align: 'center' });
+        doc.moveDown(0.8);
+        doc
+          .moveTo(50, doc.y)
+          .lineTo(550, doc.y)
+          .strokeColor(azulMarino)
+          .stroke();
 
-      doc
-        .font('Helvetica')
-        .fontSize(10)
-        .text('CONSTITUCIÓN 1255 6º “B” · CAPITAL FEDERAL · TEL. 4304-5935', { align: 'center' })
-        .text('www.plomergascentro.com.ar · plomergas@hotmail.com', { align: 'center' })
-        .text('www.plomer-gas.com.ar', { align: 'center' });
-
-      doc.moveDown(1);
-      doc
-        .moveTo(50, doc.y)
-        .lineTo(550, doc.y)
-        .strokeColor('#aaaaaa')
-        .stroke();
-      doc.moveDown(1);
-
-      // Fecha y destinatario
-      doc.font('Helvetica').fontSize(11);
-      doc.text(`Bs. As., ${fecha}`, { align: 'right' });
-      doc.moveDown();
-      doc.text(`Sr/a ${cliente.nombre}`);
-      doc.text(`${cliente.direccion}`);
-      doc.text('CABA');
-      doc.moveDown();
-
-      // Título
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(14)
-        .text('PRESUPUESTO', { align: 'center', underline: true });
-      doc.moveDown(1.5);
-
-      // Detalle
-      doc.font('Helvetica').fontSize(11);
-      doc.text('De acuerdo a lo solicitado, se cotiza el siguiente trabajo:');
-      doc.moveDown(0.8);
-
-      // Detalle del trabajo
-      detalle.split('\n').forEach((linea, i) => {
-        doc.text(`${i + 1}) ${linea}`);
-      });
-
-      doc.moveDown(1);
-
-      // Mostrar nota si se ingresó
-      if (nota && nota.trim() !== '') {
-        doc.font('Helvetica-Bold').text('Nota:', { underline: true });
-        doc.font('Helvetica').text(nota);
+        // ===== INFORMACIÓN CLIENTE =====
         doc.moveDown(1);
-      }
+        doc.font('Helvetica-Bold').fontSize(11).text(`Presupuesto Nº ${numeroFormateado}`, { align: 'right' });
+        doc.font('Helvetica').text(`Bs. As., ${fecha}`, { align: 'right' });
+        doc.moveDown(1);
+        doc.font('Helvetica-Bold').text(`Sres. ${cliente.nombre}`);
+        if (cliente.direccion) doc.font('Helvetica').text(cliente.direccion);
+        doc.text('C.A.B.A');
+        doc.moveDown(1.2);
 
-      doc.moveDown(1);
-      doc
-        .moveTo(50, doc.y)
-        .lineTo(550, doc.y)
-        .strokeColor('#dddddd')
-        .stroke();
-      doc.moveDown(1);
+        // ===== TÍTULO =====
+        doc.font('Helvetica-Bold').fontSize(13).fillColor(azulMarino).text('PRESUPUESTO', { align: 'center', underline: true });
+        doc.moveDown(1);
+        doc.fillColor('black').font('Helvetica').fontSize(11);
+        doc.text('De acuerdo a lo solicitado, cotizamos el siguiente trabajo:');
+        doc.moveDown(0.5);
 
-      // Precio
-      doc
-        .font('Helvetica-Bold')
-        .text(`Costo total del trabajo: $${precio} (${precioTexto})`);
-      doc.moveDown();
+        // ===== DETALLE =====
+        const lineas = detalle.split('\n').filter(l => l.trim() !== '');
+        lineas.forEach((linea, i) => {
+          doc.text(`${i + 1}) ${linea.trim()}`);
+        });
 
-      // Nota
-      doc.font('Helvetica').text(
-        'Nota: Una vez realizado el trabajo, se podrá ajustar el monto si se requiere trabajo adicional.'
-      );
-      doc.moveDown(1);
+        doc.moveDown(1);
 
-      // Forma de pago y duración
-      doc.text('FORMA DE PAGO: Contra entrega de obra');
-      doc.text(`DURACIÓN DE LA OBRA: ${duracion}`);
-      doc.moveDown(2);
+        // ===== NOTA =====
+        if (nota && nota.trim() !== '') {
+          doc.font('Helvetica-Bold').text('Nota:');
+          doc.font('Helvetica').text(nota);
+          doc.moveDown(1);
+        }
 
-      // Firma
-      doc.text('Atentamente,');
-      doc.moveDown(1);
-      doc.text('S.S.S.');
-      doc.font('Helvetica-Bold').text('HUGO DAVID MARTÍNEZ');
+        // ===== COSTOS =====
+        if (listaPrecios.length > 1) {
+          doc.font('Helvetica-Bold').text('Detalle de costos:');
+          listaPrecios.forEach((p, i) => {
+            doc.font('Helvetica').text(`• Costo ${i + 1}: $${p.toLocaleString('es-AR')}`);
+          });
+          doc.moveDown(0.5);
+        }
 
-      doc.end();
-      doc.pipe(res);
+        doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#aaaaaa').stroke();
+        doc.moveDown(0.7);
+
+        // ===== TOTAL =====
+        doc
+          .font('Helvetica-Bold')
+          .fillColor('black')
+          .text(`Costo total del trabajo: $${total.toLocaleString('es-AR')}`, { align: 'left' });
+        doc.moveDown(0.5);
+
+        // ===== FORMA DE PAGO =====
+        doc.font('Helvetica-Bold').fillColor(azulMarino).text('Forma de pago:');
+        doc.font('Helvetica').fillColor('black').text(forma_pago && forma_pago.trim() !== '' ? forma_pago : 'Contra entrega de obra');
+        doc.moveDown(0.5);
+
+        // ===== DURACIÓN =====
+        doc.font('Helvetica-Bold').fillColor(azulMarino).text('Duración estimada:');
+        doc.font('Helvetica').fillColor('black').text(duracion);
+        doc.moveDown(1);
+
+        // ===== SECCIÓN DE FIRMANTES =====
+        doc.moveDown(2);
+
+        // 🔹 "Atentamente" alineado a la derecha con azul marino
+        doc.font('Helvetica-Bold')
+          .fillColor(azulMarino)
+          .fontSize(12)
+          .text('Atentamente:', { align: 'right' });
+
+        doc.moveDown(1.5);
+
+        // 🔹 Firmantes alineados a la derecha en negrita negra
+        const firmantesLista = firmantes
+          ? firmantes.split('\n').filter(f => f.trim() !== '')
+          : ['HUGO DAVID MARTÍNEZ'];
+
+        firmantesLista.forEach((f, i) => {
+          doc.font('Helvetica-Bold')
+            .fillColor('black')
+            .fontSize(11)
+            .text(f.trim(), { align: 'right' });
+        });
+
+        doc.moveDown(2);
+
+        // 🔹 Línea divisoria gris claro
+        doc.strokeColor('#cccccc')
+          .moveTo(50, doc.y)
+          .lineTo(550, doc.y)
+          .stroke();
+
+        doc.moveDown(1.5);
+
+        // 🔹 Texto de validez centrado con gris oscuro y espaciado elegante
+        doc.font('Helvetica')
+          .fontSize(9)
+          .fillColor('#444444')
+          .text(
+            'Presupuesto válido por 7 días.',
+            { align: 'center', lineGap: 2 }
+          );
+
+        doc.moveDown(0.5);
+
+        // 🔹 Línea final sutil
+        doc.strokeColor('#dddddd')
+          .moveTo(150, doc.y)
+          .lineTo(450, doc.y)
+          .stroke();
+
+        doc.end();
+
+        writeStream.on('finish', () => {
+          db.query(
+            'UPDATE presupuestos SET nombre_archivo = ? WHERE cliente_id = ? AND numero = ?',
+            [nombreArchivo, cliente_id, numeroFormateado],
+            (err) => {
+              if (err) return res.status(500).json({ error: err.message });
+              res.download(rutaArchivo);
+            }
+          );
+        });
+      });
     });
   });
 };
-
 exports.listarPresupuestos = (req, res) => {
   const { idCliente } = req.params;
-
   db.query('SELECT * FROM presupuestos WHERE cliente_id = ?', [idCliente], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);

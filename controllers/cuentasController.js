@@ -58,3 +58,10 @@ exports.incrementarFacturado = (cuentaNombre, monto) => {
     }
   );
 };
+// Reiniciar facturación del mes (pone total_facturado = 0)
+exports.reiniciarFacturacion = (req, res) => {
+  db.query('UPDATE cuentas SET total_facturado = 0', (err) => {
+    if (err) return res.status(500).json({ error: 'Error al reiniciar la facturación' });
+    res.json({ message: 'Facturación reiniciada correctamente' });
+  });
+};

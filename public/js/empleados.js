@@ -1,6 +1,3 @@
-// ✅ Código completo empleados.js corregido con animación visual
-
-// Mostrar loader durante carga
 function mostrarLoader() {
   const loader = document.getElementById('loader-empleados');
   if (loader) loader.style.display = 'block';
@@ -11,7 +8,6 @@ function ocultarLoader() {
   if (loader) loader.style.display = 'none';
 }
 
-// Función global para cargar empleados
 async function cargarEmpleados() {
   mostrarLoader();
   const res = await fetch('/api/empleados');
@@ -20,8 +16,9 @@ async function cargarEmpleados() {
   lista.innerHTML = '';
 
   empleados.forEach(emp => {
-    const totalEstimado = emp.dias_trabajados * emp.sueldo_diario - emp.adelanto_semanal;
-
+    const totalEstimado = emp.trabaja_porcentaje
+      ? `$${Number(emp.total_porcentaje || 0).toFixed(2)}`
+      : `$${emp.dias_trabajados * emp.sueldo_diario - emp.adelanto_semanal}`;
     lista.innerHTML += `
       <div class="col-md-6">
         <div class="card p-4 shadow-sm border-0 animate__animated animate__fadeIn">
@@ -30,8 +27,9 @@ async function cargarEmpleados() {
           <p class="mb-1">💰 <strong>$${emp.sueldo_diario}</strong> por día</p>
           <p class="mb-1">📅 Días trabajados: <strong>${emp.dias_trabajados}</strong></p>
           <p class="mb-1">💸 Adelantos: <strong>$${emp.adelanto_semanal}</strong></p>
-          <p class="mb-2">🧾 A pagar: <span class="badge bg-success">$${totalEstimado}</span></p>
-
+          <p class="mb-2">🧾 A pagar: <span class="badge bg-success">${totalEstimado}</span></p>
+          <p class="mb-1">⚖ Tipo: <strong>${emp.trabaja_porcentaje ? 'Porcentaje (50%)' : 'Sueldo diario'}</strong></p>
+          ${emp.trabaja_porcentaje ? '<p class="text-warning fw-bold">🧮 Cobra 50% por servicio</p>' : ''}
           <div class="d-flex flex-wrap gap-2">
             <button class="btn btn-success btn-sm" onclick="registrarAsistencia(${emp.id})">✔ Asistencia</button>
             <button class="btn btn-warning btn-sm" onclick="cargarAdelanto(${emp.id})">➕ Adelanto</button>
@@ -47,8 +45,6 @@ async function cargarEmpleados() {
   ocultarLoader();
 }
 
-// Esperar carga del DOM
-
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('form-empleado');
 
@@ -58,13 +54,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const nombre = document.getElementById('nombre').value;
     const telefono = document.getElementById('telefono').value;
     const sueldo = document.getElementById('sueldo').value;
-
+    const porcentaje = document.getElementById('porcentaje').checked;
     const res = await fetch('/api/empleados', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre, telefono, sueldo_diario: sueldo })
+      body: JSON.stringify({
+        nombre,
+        telefono,
+        sueldo_diario: sueldo,
+        trabaja_porcentaje: porcentaje
+      })
     });
-
     const data = await res.json();
     if (res.ok) {
       alert('Empleado registrado con éxito');
@@ -77,8 +77,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   cargarEmpleados();
 });
-
-// Funciones globales para acciones
 
 window.registrarAsistencia = async function (id) {
   const res = await fetch(`/api/empleados/${id}/asistencia`, { method: 'PUT' });
@@ -196,11 +194,12 @@ document.getElementById('btnGuardarEdicionEmpleado').addEventListener('click', a
   const nombre = document.getElementById('edit_nombre').value;
   const telefono = document.getElementById('edit_telefono').value;
   const sueldo_diario = document.getElementById('edit_sueldo').value;
+  const trabaja_porcentaje = document.getElementById('edit_porcentaje').checked;
 
   const res = await fetch(`/api/empleados/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ nombre, telefono, sueldo_diario })
+    body: JSON.stringify({ nombre, telefono, sueldo_diario, trabaja_porcentaje })
   });
 
   const data = await res.json();
@@ -212,7 +211,6 @@ document.getElementById('btnGuardarEdicionEmpleado').addEventListener('click', a
     alert('Error: ' + data.error);
   }
 });
-
 window.eliminarEmpleado = async function (id) {
   if (!confirm('¿Eliminar este empleado?')) return;
   const res = await fetch(`/api/empleados/${id}`, { method: 'DELETE' });
