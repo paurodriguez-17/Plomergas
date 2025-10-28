@@ -1,5 +1,5 @@
 const db = require('../db');
-const cuentasController = require('./cuentasControllers');
+const cuentasController = require('./cuentasController');
 
 // ===== CREAR SERVICIO =====
 exports.crearServicio = async (req, res) => {
