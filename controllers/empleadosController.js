@@ -1,5 +1,15 @@
 const db = require('../db');
 
+exports.getEmpleados = async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM empleados');
+    res.json(rows);
+  } catch (err) {
+    console.error('Error en /api/empleados:', err);
+    res.status(500).json({ error: 'Error en la base de datos' });
+  }
+};
+
 exports.crearEmpleado = (req, res) => {
   const { nombre, telefono, sueldo_diario, trabaja_porcentaje } = req.body;
   if (!nombre || !sueldo_diario) {
