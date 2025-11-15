@@ -1,6 +1,6 @@
 // /controllers/authController.js
 const db = require('../db');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const SECRET = process.env.JWT_SECRET || "supersecreto123";
