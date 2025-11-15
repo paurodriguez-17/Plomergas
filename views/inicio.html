@@ -19,16 +19,23 @@
         const token = localStorage.getItem("token");
         const rol = localStorage.getItem("rol");
 
-        // Si no hay sesión → volver al login (index.html)
+        // Si no hay sesión → volver al login
         if (!token) window.location.href = "/";
 
-        // Ocultar módulos si el rol no es admin
         document.addEventListener("DOMContentLoaded", () => {
             if (rol !== "administrador") {
-                document.querySelector("[onclick=\"window.location.href='/empleados'\"]")?.remove();
-                document.querySelector("[onclick=\"window.location.href='/servicios'\"]")?.remove();
-                document.querySelector("[onclick=\"window.location.href='/facturacion'\"]")?.remove();
-                document.querySelector("[onclick=\"window.location.href='/usuarios'\"]")?.remove();
+
+                // 🔥 Ocultar tarjetas del panel
+                document.querySelector("[onclick=\"window.location.href='/empleados'\"]")?.closest(".col-md-3")?.remove();
+                document.querySelector("[onclick=\"window.location.href='/servicios'\"]")?.closest(".col-md-3")?.remove();
+                document.querySelector("[onclick=\"window.location.href='/facturacion'\"]")?.closest(".col-md-3")?.remove();
+                document.querySelector("[onclick=\"window.location.href='/usuarios'\"]")?.closest(".col-md-3")?.remove();
+
+                // 🔥 Ocultar próximos servicios
+                document.querySelector(".proximos-card")?.remove();
+
+                // 🔥 Ocultar gráfico facturación
+                document.querySelector(".card.shadow.p-4.h-100")?.remove();
             }
         });
     </script>
@@ -37,42 +44,53 @@
         <h1 class="text-center mb-5">Panel de Inicio</h1>
 
         <div class="row g-4 mb-5">
+
+            <!-- EMPLEADOS -->
             <div class="col-md-3">
                 <div class="card card-dashboard text-center p-4 shadow" onclick="window.location.href='/empleados'">
                     <h5>👷 Empleados</h5>
                 </div>
             </div>
 
+            <!-- CLIENTES -->
             <div class="col-md-3">
                 <div class="card card-dashboard text-center p-4 shadow" onclick="window.location.href='/clientes'">
                     <h5>👥 Clientes</h5>
                 </div>
             </div>
 
+            <!-- SERVICIOS -->
             <div class="col-md-3">
                 <div class="card card-dashboard text-center p-4 shadow" onclick="window.location.href='/servicios'">
                     <h5>🛠 Servicios</h5>
                 </div>
             </div>
 
+            <!-- FACTURACION -->
             <div class="col-md-3">
                 <div class="card card-dashboard text-center p-4 shadow" onclick="window.location.href='/facturacion'">
                     <h5>💰 Facturación</h5>
                 </div>
             </div>
-        </div>
-        <div class="col-md-3 admin-only">
-            <div class="card card-dashboard text-center p-4 shadow" onclick="window.location.href='/usuarios'">
-                <h5>🧑‍💼 Usuarios</h5>
+
+            <!-- USUARIOS (solo admin) -->
+            <div class="col-md-3">
+                <div class="card card-dashboard text-center p-4 shadow" onclick="window.location.href='/usuarios'">
+                    <h5>🧑‍💼 Usuarios</h5>
+                </div>
             </div>
+
         </div>
+
         <div class="row g-4 align-items-stretch">
 
+            <!-- PROXIMOS SERVICIOS -->
             <div class="col-lg-5">
                 <div class="proximos-card h-100">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="mb-0 text-primary"><i class="bi bi-calendar-week me-2"></i>Próximos servicios (7
-                            días)</h4>
+                        <h4 class="mb-0 text-primary">
+                            <i class="bi bi-calendar-week me-2"></i>Próximos servicios (7 días)
+                        </h4>
                         <a href="/agenda" class="btn btn-sm btn-outline-primary">Ver Agenda</a>
                     </div>
 
@@ -82,6 +100,7 @@
                 </div>
             </div>
 
+            <!-- GRAFICO FACTURACION -->
             <div class="col-lg-7">
                 <div class="card shadow p-4 h-100">
                     <h4 class="mb-3">Estado de cuentas (Facturación)</h4>
@@ -97,8 +116,10 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            await cargarFacturacion();
-            await cargarProximosServicios();
+            if (rol === "administrador") {
+                await cargarFacturacion();
+                await cargarProximosServicios();
+            }
         });
 
         async function cargarFacturacion() {
@@ -182,19 +203,19 @@
                     }[estado] || 'secondary';
 
                     return `
-            <div class="servicio-item" onclick="window.location.href='/agenda?fecha=${fechaISO}'">
-              <div class="d-flex justify-content-between align-items-start">
-                <div>
-                  <h6>${s.titulo || 'Sin título'}</h6>
-                  <small>📍 ${s.ubicacion || 'Sin dirección'}</small>
-                  <small>👥 ${s.cliente_nombre || 'Sin cliente'}</small>
-                  <small>👷 ${s.empleado_nombre || 'Sin empleado'}</small>
-                  <small>📅 ${fecha} — 🕒 ${hora}</small>
-                </div>
-                <span class="badge bg-${badgeColor}">${estado}</span>
-              </div>
-            </div>
-          `;
+                        <div class="servicio-item" onclick="window.location.href='/agenda?fecha=${fechaISO}'">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6>${s.titulo || 'Sin título'}</h6>
+                                    <small>📍 ${s.ubicacion || 'Sin dirección'}</small>
+                                    <small>👥 ${s.cliente_nombre || 'Sin cliente'}</small>
+                                    <small>👷 ${s.empleado_nombre || 'Sin empleado'}</small>
+                                    <small>📅 ${fecha} — 🕒 ${hora}</small>
+                                </div>
+                                <span class="badge bg-${badgeColor}">${estado}</span>
+                            </div>
+                        </div>
+                    `;
                 }).join('');
             } catch (error) {
                 contenedor.innerHTML = `<p class="text-danger">Error al cargar servicios.</p>`;
