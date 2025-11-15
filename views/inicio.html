@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inicio · PlomerGas</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0d47a1">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+
+<body class="p-4">
+
+    <script>
+        const token = localStorage.getItem("token");
+        const rol = localStorage.getItem("rol");
+
+        // Si no hay sesión → volver al login (index.html)
+        if (!token) window.location.href = "/";
+
+        // Ocultar módulos si el rol no es admin
+        document.addEventListener("DOMContentLoaded", () => {
+            if (rol !== "administrador") {
+                document.querySelector("[onclick=\"window.location.href='/empleados'\"]")?.remove();
+                document.querySelector("[onclick=\"window.location.href='/servicios'\"]")?.remove();
+                document.querySelector("[onclick=\"window.location.href='/facturacion'\"]")?.remove();
+                document.querySelector("[onclick=\"window.location.href='/usuarios'\"]")?.remove();
+            }
+        });
+    </script>
+
+    <div class="container">
+        <h1 class="text-center mb-5">Panel de Inicio</h1>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-3">
+                <div class="card card-dashboard text-center p-4 shadow" onclick="window.location.href='/empleados'">
+                    <h5>👷 Empleados</h5>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card card-dashboard text-center p-4 shadow" onclick="window.location.href='/clientes'">
+                    <h5>👥 Clientes</h5>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card card-dashboard text-center p-4 shadow" onclick="window.location.href='/servicios'">
+                    <h5>🛠 Servicios</h5>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card card-dashboard text-center p-4 shadow" onclick="window.location.href='/facturacion'">
+                    <h5>💰 Facturación</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 admin-only">
+            <div class="card card-dashboard text-center p-4 shadow" onclick="window.location.href='/usuarios'">
+                <h5>🧑‍💼 Usuarios</h5>
+            </div>
+        </div>
+        <div class="row g-4 align-items-stretch">
+
+            <div class="col-lg-5">
+                <div class="proximos-card h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="mb-0 text-primary"><i class="bi bi-calendar-week me-2"></i>Próximos servicios (7
+                            días)</h4>
+                        <a href="/agenda" class="btn btn-sm btn-outline-primary">Ver Agenda</a>
+                    </div>
+
+                    <div id="lista-proximos">
+                        <p class="text-muted">Cargando servicios...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="card shadow p-4 h-100">
+                    <h4 class="mb-3">Estado de cuentas (Facturación)</h4>
+                    <canvas id="grafico-facturacion" height="200"></canvas>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            await cargarFacturacion();
+            await cargarProximosServicios();
+        });
+
+        async function cargarFacturacion() {
+            const res = await fetch('/api/cuentas');
+            const cuentas = await res.json();
+            const canvas = document.getElementById('grafico-facturacion');
+
+            if (!cuentas.length) {
+                canvas.outerHTML = '<p class="text-muted">No hay cuentas registradas.</p>';
+                return;
+            }
+
+            const nombres = cuentas.map(c => c.nombre);
+            const porcentajes = cuentas.map(c => ((c.total_facturado / c.limite) * 100).toFixed(1));
+            const colores = porcentajes.map(p => {
+                const val = parseFloat(p);
+                if (val >= 100) return '#dc3545';
+                if (val >= 80) return '#ffc107';
+                return '#28a745';
+            });
+
+            new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: nombres,
+                    datasets: [{
+                        label: '% de facturación usada',
+                        data: porcentajes,
+                        backgroundColor: colores,
+                        borderRadius: 10,
+                        barThickness: 30
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const i = ctx.dataIndex;
+                                    const cuenta = cuentas[i];
+                                    return `${ctx.raw}% - $${cuenta.total_facturado.toFixed(2)} / $${cuenta.limite.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { max: 120, ticks: { callback: val => `${val}%` } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        async function cargarProximosServicios() {
+            const contenedor = document.getElementById('lista-proximos');
+
+            try {
+                const res = await fetch('/api/agenda/proximos?dias=7');
+                const servicios = await res.json();
+
+                if (!servicios.length) {
+                    contenedor.innerHTML = `<p class="text-muted">No hay servicios programados para esta semana.</p>`;
+                    return;
+                }
+
+                contenedor.innerHTML = servicios.map(s => {
+                    const fechaISO = s.fecha?.split('T')[0] || s.fecha;
+                    const fecha = s.fecha ? new Date(s.fecha).toLocaleDateString('es-AR', {
+                        weekday: 'short', day: 'numeric', month: 'short'
+                    }) : '';
+                    const hora = s.hora ? s.hora.slice(0, 5) : '';
+                    const estado = s.estado || 'Pendiente';
+                    const badgeColor = {
+                        'Pendiente': 'secondary',
+                        'En Progreso': 'warning',
+                        'Completado': 'success',
+                        'Cancelado': 'danger'
+                    }[estado] || 'secondary';
+
+                    return `
+            <div class="servicio-item" onclick="window.location.href='/agenda?fecha=${fechaISO}'">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <h6>${s.titulo || 'Sin título'}</h6>
+                  <small>📍 ${s.ubicacion || 'Sin dirección'}</small>
+                  <small>👥 ${s.cliente_nombre || 'Sin cliente'}</small>
+                  <small>👷 ${s.empleado_nombre || 'Sin empleado'}</small>
+                  <small>📅 ${fecha} — 🕒 ${hora}</small>
+                </div>
+                <span class="badge bg-${badgeColor}">${estado}</span>
+              </div>
+            </div>
+          `;
+                }).join('');
+            } catch (error) {
+                contenedor.innerHTML = `<p class="text-danger">Error al cargar servicios.</p>`;
+                console.error(error);
+            }
+        }
+    </script>
+
+</body>
+
+</html>

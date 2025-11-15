@@ -13,6 +13,6 @@ document.getElementById("btnLogin").addEventListener("click", async () => {
 
   localStorage.setItem("token", data.token);
   localStorage.setItem("rol", data.usuario.rol);
+  window.location.href = "/inicio";
 
-  window.location.href = "/";
 });
