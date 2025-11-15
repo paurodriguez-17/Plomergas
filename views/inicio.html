@@ -34,6 +34,11 @@
             }
         });
     </script>
+    <div class="text-end mb-4">
+        <button id="btnLogout" class="btn btn-danger">
+            <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+        </button>
+    </div>
 
     <div class="container">
         <h1 class="text-center mb-5">Panel de Inicio</h1>
@@ -114,6 +119,15 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.getElementById("btnLogout")?.addEventListener("click", () => {
+            if (confirm("¿Cerrar sesión?")) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("rol");
+                window.location.href = "/login";
+            }
+        });
+    </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
