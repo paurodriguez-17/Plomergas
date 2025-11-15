@@ -19,22 +19,17 @@
         const token = localStorage.getItem("token");
         const rol = localStorage.getItem("rol");
 
-        // Si no hay sesión → volver al login
         if (!token) window.location.href = "/";
 
         document.addEventListener("DOMContentLoaded", () => {
             if (rol !== "administrador") {
+                // Ocultar tarjetas solo admin
+                document.querySelectorAll(".admin-only")?.forEach(el => el.remove());
 
-                // 🔥 Ocultar tarjetas del panel
-                document.querySelector("[onclick=\"window.location.href='/empleados'\"]")?.closest(".col-md-3")?.remove();
-                document.querySelector("[onclick=\"window.location.href='/servicios'\"]")?.closest(".col-md-3")?.remove();
-                document.querySelector("[onclick=\"window.location.href='/facturacion'\"]")?.closest(".col-md-3")?.remove();
-                document.querySelector("[onclick=\"window.location.href='/usuarios'\"]")?.closest(".col-md-3")?.remove();
-
-                // 🔥 Ocultar próximos servicios
+                // Ocultar próximos servicios
                 document.querySelector(".proximos-card")?.remove();
 
-                // 🔥 Ocultar gráfico facturación
+                // Ocultar gráfico
                 document.querySelector(".card.shadow.p-4.h-100")?.remove();
             }
         });
@@ -46,7 +41,7 @@
         <div class="row g-4 mb-5">
 
             <!-- EMPLEADOS -->
-            <div class="col-md-3">
+            <div class="col-md-3 admin-only">
                 <div class="card card-dashboard text-center p-4 shadow" onclick="window.location.href='/empleados'">
                     <h5>👷 Empleados</h5>
                 </div>
@@ -59,29 +54,35 @@
                 </div>
             </div>
 
-            <!-- SERVICIOS -->
+            <!-- AGENDA (todos los roles) -->
             <div class="col-md-3">
+                <div class="card card-dashboard text-center p-4 shadow" onclick="window.location.href='/agenda'">
+                    <h5>📅 Agenda</h5>
+                </div>
+            </div>
+
+            <!-- SERVICIOS -->
+            <div class="col-md-3 admin-only">
                 <div class="card card-dashboard text-center p-4 shadow" onclick="window.location.href='/servicios'">
                     <h5>🛠 Servicios</h5>
                 </div>
             </div>
 
             <!-- FACTURACION -->
-            <div class="col-md-3">
+            <div class="col-md-3 admin-only">
                 <div class="card card-dashboard text-center p-4 shadow" onclick="window.location.href='/facturacion'">
                     <h5>💰 Facturación</h5>
                 </div>
             </div>
 
             <!-- USUARIOS (solo admin) -->
-            <div class="col-md-3">
+            <div class="col-md-3 admin-only">
                 <div class="card card-dashboard text-center p-4 shadow" onclick="window.location.href='/usuarios'">
                     <h5>🧑‍💼 Usuarios</h5>
                 </div>
             </div>
 
         </div>
-
         <div class="row g-4 align-items-stretch">
 
             <!-- PROXIMOS SERVICIOS -->
