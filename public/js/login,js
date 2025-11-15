@@ -1,0 +1,18 @@
+document.getElementById("btnLogin").addEventListener("click", async () => {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  const res = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password })
+  });
+
+  const data = await res.json();
+  if (!res.ok) return alert(data.error);
+
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("rol", data.usuario.rol);
+
+  window.location.href = "/";
+});

@@ -26,6 +26,8 @@ const serviciosRoutes = require('./routes/servicios');
 app.use('/api/servicios', serviciosRoutes);
 const cuentasRoutes = require('./routes/cuentas');
 app.use('/api/cuentas', cuentasRoutes);
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
 
 // 👉 Servir archivos HTML desde "views" si no lo hiciste ya
 app.use(express.static(path.join(__dirname, 'public')));
@@ -37,6 +39,9 @@ app.get('/empleados', (req, res) => res.sendFile(path.join(__dirname, 'views/emp
 app.get('/servicios', (req, res) => res.sendFile(path.join(__dirname, 'views/servicios.html')));
 app.get('/facturacion', (req, res) => res.sendFile(path.join(__dirname, 'views/facturacion.html')));
 app.get('/agenda', (req, res) => res.sendFile(path.join(__dirname, 'views/agenda.html')));
+app.get('/usuarios', (req, res) => res.sendFile(path.join(__dirname, 'views/usuarios.html')));
+app.get('/registro', (req, res) => res.sendFile(path.join(__dirname, 'views/registro.html')));
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'views/login.html')));
 
 // ❗ Para soportar index.html al instalar PWA en Android o iOS:
 app.get('/index.html', (req, res) => {
