@@ -28,15 +28,9 @@ const cuentasRoutes = require('./routes/cuentas');
 app.use('/api/cuentas', cuentasRoutes);
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
-app.get('/', (req, res) =>
-    res.sendFile(path.join(__dirname, 'views/index.html'))
-);
-app.get('/login', (req, res) =>
-    res.sendFile(path.join(__dirname, 'views/index.html'))
-);
-app.get('/inicio', (req, res) =>
-    res.sendFile(path.join(__dirname, 'views/inicio.html'))
-);
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'views/index.html')));
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'views/index.html')));
+app.get('/inicio', (req, res) => res.sendFile(path.join(__dirname, 'views/inicio.html')));
 app.get('/clientes', (req, res) => res.sendFile(path.join(__dirname, 'views/clientes.html')));
 app.get('/empleados', (req, res) => res.sendFile(path.join(__dirname, 'views/empleados.html')));
 app.get('/servicios', (req, res) => res.sendFile(path.join(__dirname, 'views/servicios.html')));
