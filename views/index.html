@@ -54,6 +54,19 @@
       window.location.href = "/inicio";
     });
   </script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      // 🧹 Limpia registros viejos
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        for (let reg of regs) reg.unregister();
+      }).finally(() => {
+        // 🆕 Registra el nuevo
+        navigator.serviceWorker.register("/service-worker.js")
+          .then(() => console.log("SW actualizado"))
+          .catch(err => console.error("SW error:", err));
+      });
+    }
+  </script>
 
 </body>
 
